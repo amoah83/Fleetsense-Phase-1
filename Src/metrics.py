@@ -37,3 +37,18 @@ definitions = {
  "utilisation_proxy": "trips per active hour per zone"
 }
 print(definitions)
+ CR-1: Revenue with and without tolls and surcharges per zone
+con.execute("""
+CREATE OR REPLACE TABLE revenue_per_zone AS
+SELECT
+    PULocationID as zone_id,
+    SUM(COALESCE(fare_amount,0)) as revenue_without_tolls,
+    SUM(COALESCE(fare_amount,0) + COALESCE(tip_amount,0) + COALESCE(tolls_amount,0) + COALESCE(extra,0) + COALESCE(mta_tax,0) + COALESCE(improvement_surcharge,0) + COALESCE(congestion_surcharge,0) + COALESCE(airport_fee,0)) as revenue_with_tolls
+FROM fact_trips
+GROUP BY 1
+ORDER BY revenue_with_tolls DESC
+""")
+
+con.execute("COPY revenue_per_zone TO 'data/processed/revenue_per_zone.csv' (HEADER)")
+print("CR-1 DONE: revenue_per_zone.csv created with with/without tolls")
+print(con.execute("SELECT * FROM revenue_per_zone LIMIT 5").fetchall())
