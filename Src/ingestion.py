@@ -16,7 +16,6 @@ def download_month(month: int):
         return dest
     url = BASE_URL.format(month=month)
     print(f"Downloading 2023-{month:02d}...")
-    df = pl.read_parquet(url)
         df = pl.read_parquet(url)
     rows_in = len(df)
 
