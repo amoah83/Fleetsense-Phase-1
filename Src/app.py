@@ -11,7 +11,6 @@ data_filter = st.sidebar.selectbox("Data Range", ["Last 7 days", "Last 30 days",
 zone_filter = st.sidebar.slider("Min Trips", 0, 500, 10)
 
 st.success(f"Filters loaded: {data_filter} | Min trips: {zone_filter}")
-
 # Sample data to prove app works
 df = pd.DataFrame({
     "Zone": ["Manhattan", "Brooklyn", "Queens", "Bronx"],
