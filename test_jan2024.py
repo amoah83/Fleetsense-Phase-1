@@ -10,7 +10,7 @@ def test_jan2024_loads():
 
 def test_jan2024_has_expected_columns():
     con = duckdb.connect(":memory:")
-    cols = [r[1] for r in con.execute(f"DESCRIBE SELECT * FROM read_parquet('{URL}') LIMIT 1").fetchall()]
+    cols = [r[0] for r in con.execute(f"DESCRIBE SELECT * FROM read_parquet('{URL}') LIMIT 1").fetchall()]
     for c in ["tpep_pickup_datetime", "tpep_dropoff_datetime", "fare_amount", "trip_distance", "PULocationID", "DOLocationID"]:
         assert c in cols
 
