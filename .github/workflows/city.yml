@@ -1,13 +1,19 @@
 name: CI
+
 on: [push, pull_request]
+
 jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Fleetsense CI - Passing
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
         run: |
-          echo "Fleetsense Phase 1 CI"
-          echo "Live App: Streamlit Deployed"
-          echo "CI Passing"
-          exit 0
+          pip install pandas pyarrow duckdb pytest ruff
+      - name: Lint with ruff
+        run: ruff check .
+      - name: Run ETL Tester
+        run: pytest test_etl.py -v
