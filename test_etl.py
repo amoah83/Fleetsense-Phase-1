@@ -3,10 +3,8 @@ import pandas as pd
 import pytest
 
 def clean_trips(df: pd.DataFrame):
-    """FR-1.02 + AC-1.2: validate trips, quarantine bad rows."""
     quarantined = []
     clean = []
-
     for _, row in df.iterrows():
         reasons = []
         if row["tpep_dropoff_datetime"] <= row["tpep_pickup_datetime"]:
@@ -15,14 +13,12 @@ def clean_trips(df: pd.DataFrame):
             reasons.append("negative_value")
         if row["PULocationID"] not in [1, 2, 3] or row["DOLocationID"] not in [1, 2, 3]:
             reasons.append("unknown_zone")
-
         if reasons:
             r = row.to_dict()
             r["reason_code"] = ";".join(reasons)
             quarantined.append(r)
         else:
             clean.append(row.to_dict())
-
     return pd.DataFrame(clean), pd.DataFrame(quarantined)
 
 def sample_df():
@@ -56,7 +52,6 @@ def sample_df():
     )
 
 def test_ac_1_2_row_reconciliation():
-    """AC-1.2: Rows In = Rows Loaded + Rows Quarantined"""
     df = sample_df()
     clean, quar = clean_trips(df)
     assert len(df) == len(clean) + len(quar)
@@ -64,21 +59,18 @@ def test_ac_1_2_row_reconciliation():
     assert len(quar) == 2
 
 def test_fr_1_02_quarantine_has_reason_code():
-    """FR-1.02: Quarantined rows must have reason_code"""
     _, quar = clean_trips(sample_df())
     assert "reason_code" in quar.columns
     assert quar["reason_code"].notna().all()
     assert "dropoff_before_pickup" in quar["reason_code"].iloc[0]
 
 def test_clean_data_has_no_violations():
-    """Clean table must have no violations"""
     clean, _ = clean_trips(sample_df())
     assert (clean["fare_amount"] >= 0).all()
     assert (clean["trip_distance"] >= 0).all()
     assert (clean["tpep_dropoff_datetime"] > clean["tpep_pickup_datetime"]).all()
 
 def test_duckdb_warehouse_tables():
-    """FR-1.03: Warehouse has trips, zones, calendar, hourly_demand"""
     con = duckdb.connect(":memory:")
     con.execute("CREATE TABLE trips (id INTEGER)")
     con.execute("CREATE TABLE zones (id INTEGER)")
@@ -89,7 +81,6 @@ def test_duckdb_warehouse_tables():
         assert t in tables
 
 def test_nfr_02_data_quality_report():
-    """D-1.4: Report can be generated"""
     df = sample_df()
     clean, quar = clean_trips(df)
     report = {
