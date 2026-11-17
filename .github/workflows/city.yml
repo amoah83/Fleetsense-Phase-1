@@ -16,4 +16,4 @@ jobs:
       - name: Lint with ruff
         run: ruff check test_etl.py
       - name: Run ETL Tester
-        run: pytest test_etl.py -v
+        run: pytest test_etl.py test_jan2024.py -v
