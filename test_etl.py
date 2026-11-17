@@ -1,6 +1,6 @@
 import duckdb
 import pandas as pd
-import pytest
+
 
 def clean_trips(df: pd.DataFrame):
     quarantined = []
