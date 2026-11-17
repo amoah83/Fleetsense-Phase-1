@@ -21,14 +21,17 @@ def load_zones():
         SELECT PULocationID as Zone_ID, COUNT(*) as Trips, SUM(fare_amount) as Revenue
         FROM read_parquet('{URL}')
         GROUP BY PULocationID ORDER BY Trips DESC LIMIT 10
-    """).df()
 
-@st.cache_data
+ 
+    @st.cache_data
 def load_daily():
     con = duckdb.connect(":memory:")
     return con.execute(f"""
         SELECT DATE(tpep_pickup_datetime) as day, COUNT(*) as Trips
         FROM read_parquet('{URL}')
+        WHERE tpep_pickup_datetime IS NOT NULL
+          AND tpep_pickup_datetime >= '2024-01-01'
+          AND tpep_pickup_datetime < '2024-02-01'
         GROUP BY day ORDER BY day
     """).df()
 
