@@ -3,6 +3,7 @@ import duckdb
 
 st.set_page_config(page_title="Fleetsense", layout="wide")
 st.title("Fleetsense - NYC Taxi Demo")
+st.caption("Source: NYC TLC")
 
 URL = "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet"
 
@@ -21,9 +22,9 @@ def load_zones():
         SELECT PULocationID as Zone_ID, COUNT(*) as Trips, SUM(fare_amount) as Revenue
         FROM read_parquet('{URL}')
         GROUP BY PULocationID ORDER BY Trips DESC LIMIT 10
+    """).df()
 
- 
-    @st.cache_data
+@st.cache_data
 def load_daily():
     con = duckdb.connect(":memory:")
     return con.execute(f"""
@@ -37,10 +38,10 @@ def load_daily():
 
 st.sidebar.header("Filters - REQUIRED")
 data_filter = st.sidebar.selectbox("Data Range", ["Last 7 days", "Last 30 days", "All"])
-min_trips = st.sidebar.slider("Min Trips", 0, 500, 10)
-st.sidebar.success(f"Active: {data_filter}")
+min_trips = st.sidebar.slider("Min Trips", 0, 100, 50)
+st.sidebar.success("Active: 1 data filter")
 
-with st.spinner("Loading real Jan 2024 data (2.8M rows)..."):
+with st.spinner("Loading real Jan 2024 data (2.9M rows)..."):
     total_trips, total_revenue, zones = load_kpis()
     df = load_zones()
     daily = load_daily()
@@ -52,9 +53,9 @@ col3.metric("Zones", zones)
 
 st.subheader("Top 10 Pickup Zones - Jan 2024 Real Data")
 st.dataframe(df, use_container_width=True)
-st.bar_chart(df, x="Zone_ID", y="Trips")
+st.bar_chart(df.set_index("Zone_ID")["Trips"])
 
-st.subheader("NYC Taxi - Jan 2024 Daily Trips")
-st.bar_chart(daily, x="day", y="Trips")
+st.subheader("Daily Trips - Jan 2024 - Daily Trips")
+st.bar_chart(daily.set_index("day")["Trips"])
 
-st.info("Fleetsense Phase 1 - Live on Streamlit Cloud | Source: NYC TLC Yellow Taxi Jan 2024")
+st.info("Fleetsense Phase 1 - Live on Streamlit Cloud | Source: NYC TLC")
