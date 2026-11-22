@@ -1,7 +1,6 @@
 import streamlit as st
 import duckdb
 import pandas as pd
-import plotly.express as px
 
 st.set_page_config(
     page_title="FleetSense NYC",
@@ -98,5 +97,11 @@ st.dataframe(
 zones_plot = df_filtered.copy()
 zones_plot["Zone_ID"] = zones_plot["Zone_ID"].astype(str)
 zones_plot = zones_plot.sort_values("Trips")
+st.bar_chart(zones_plot.set_index("Zone_ID")["Trips"], height=340)
 
-fig_zones = px.bar(zones_plot, x="Trips", y="Zone_ID", orientation="h", height=
+st.subheader(f"Daily Trips - {data_filter}")
+daily_filtered["day"] = pd.to_datetime(daily_filtered["day"])
+daily_filtered["label"] = daily_filtered["day"].dt.strftime("%b %d")
+st.bar_chart(daily_filtered.set_index("label")["Trips"], height=320)
+
+st.info("FleetSense Phase 1 • Live on Streamlit Cloud | Source: NYC TLC")
