@@ -60,14 +60,6 @@ def L():
         + U +
         " GROUP BY P ORDER BY T DESC"
     ).df()
-    con.close()
-    return k, z, d, h, p
- @st.cache_data
-def M():
-    con = duckdb.connect(":memory:")
-    U = "FROM read_parquet('"
-    U += URL
-    U += "')"
     s = con.execute(
         "SELECT CASE "
         "WHEN trip_distance BETWEEN 0 AND 0.99 "
@@ -110,7 +102,7 @@ def M():
         "GROUP BY A ORDER BY T DESC"
     ).df()
     con.close()
-    return s, w, a
+    return k, z, d, h, p, s, w, a
 
 f = st.sidebar.selectbox(
     "Data Range",
@@ -119,8 +111,7 @@ f = st.sidebar.selectbox(
 st.sidebar.divider()
 st.sidebar.write("Tip: Use tabs to explore")
 
-k, z, d, h, p = L()
-s, w, a = M()
+k, z, d, h, p, s, w, a = L()
 
 dd = d.copy()
 if f == "Last 7 days":
@@ -150,9 +141,7 @@ with t1:
     z2 = z.copy()
     z2["Z"] = z2["Z"].astype(str)
     z2 = z2.sort_values("T")
-    st.bar_chart(
-        z2.set_index("Z")["T"]
-    )
+    st.bar_chart(z2.set_index("Z")["T"])
     st.subheader("Daily Trips")
     dd["day"] = pd.to_datetime(dd["day"])
     dd["lb"] = dd["day"].dt.strftime("%b %d")
