@@ -21,3 +21,18 @@
 
  Date
 - Analyzed: Nov 2026
+---
+## 22 Nov - CR-2: FleetSense Dashboard
+
+**Decision:** Build FleetSense Streamlit dashboard with Overview, Map, Insights tabs. Format all revenue as USD ($). Keep CR-1 revenue definitions unchanged.
+
+**Context:** Mentor needs to see trips, revenue, average fare per zone with map view for Top 10 pickup zones. Previous display showed raw numbers like 2181762.54, hard to read.
+
+**Options Considered:**
+1. Format in Python as string - rejected, breaks chart sorting
+2. Format only for display copy, keep numeric for charts - APPROVED
+3. Use Plotly map - rejected, use simple lat/lon table + Streamlit map for speed
+
+**Impact:** 2 days effort. Low-Medium risk. No breaking change, additive display only.
+
+**Status:** Approved for Implementation in Week 3 Task 3. Linked to Docs/cr2_impact.md
