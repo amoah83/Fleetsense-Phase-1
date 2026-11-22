@@ -123,11 +123,11 @@ if data_filter == "Last 30 days":
     daily_filtered = daily_filtered.tail(30)
 
 c1, c2 = st.columns(2)
-c1.metric("Total Trips", f"{total_trips:,}")
-c2.metric("Total Revenue", f"${total_revenue:,.0f}")
+c1.metric("Total Trips", str(total_trips))
+c2.metric("Total Revenue", str(int(total_revenue)))
 c3, c4 = st.columns(2)
-c3.metric("Avg Fare", f"${avg_fare:.2f}")
-c4.metric("Zones", f"{zones}")
+c3.metric("Avg Fare", str(round(avg_fare, 2)))
+c4.metric("Zones", str(zones))
 
 st.subheader("Top 10 Pickup Zones")
 st.dataframe(df, use_container_width=True)
@@ -141,26 +141,112 @@ st.bar_chart(
 
 st.subheader("Phase 5 - Map of Top Zones")
 st.caption("Top pickup zones in NYC")
-zone_names = {
-    230: "Times Sq",
-    161: "Midtown Center",
-    162: "Midtown East",
-    48: "Clinton East",
-    170: "Murray Hill",
-    100: "Garment District",
-    186: "Penn Station",
-    164: "Midtown North",
-    114: "Greenwich Village",
-    68: "East Chelsea",
-    132: "JFK Airport",
-    138: "LaGuardia",
-    1: "Newark Airport"
-}
-zone_lat = {
-    230: 40.7580,
-    161: 40.7549,
-    162: 40.7527,
-    48: 40.7660,
-    170: 40.7470,
-    100: 40.7520,
-    186: 
+ids = [230, 161, 162, 48, 170]
+ids += [100, 186, 164, 114, 68]
+names = ["Times Sq", "Midtown Center"]
+names += ["Midtown East", "Clinton East"]
+names += ["Murray Hill", "Garment District"]
+names += ["Penn Station", "Midtown North"]
+names += ["Greenwich Village", "East Chelsea"]
+lats = [40.7580, 40.7549, 40.7527, 40.7660, 40.7470]
+lats += [40.7520, 40.7505, 40.7620, 40.7340, 40.7440]
+lons = [-73.9855, -73.9840, -73.9772, -73.9880, -73.9780]
+lons += [-73.9900, -73.9934, -73.9790, -73.9990, -73.9960]
+lookup = pd.DataFrame()
+lookup["Zone_ID"] = ids
+lookup["Zone_Name"] = names
+lookup["lat"] = lats
+lookup["lon"] = lons
+map_df = pd.merge(df, lookup, on="Zone_ID", how="left")
+map_df = map_df.dropna(subset=["lat"])
+st.map(map_df)
+st.dataframe(map_df, use_container_width=True)
+
+st.subheader("Daily Trips")
+daily_filtered["day"] = pd.to_datetime(
+    daily_filtered["day"]
+)
+daily_filtered["label"] = daily_filtered["day"].dt.strftime(
+    "%b %d"
+)
+st.bar_chart(
+    daily_filtered.set_index("label")["Trips"],
+    height=320
+)
+
+st.subheader("Phase 2 - Hourly Demand")
+hourly["hour_label"] = hourly["hour"].astype(str) + ":00"
+st.bar_chart(
+    hourly.set_index("hour_label")["Trips"],
+    height=320
+)
+st.dataframe(hourly, use_container_width=True)
+
+st.subheader("Phase 2 - Payment and Tips")
+st.dataframe(pay, use_container_width=True)
+st.bar_chart(
+    pay.set_index("Payment")["Trips"],
+    height=280
+)
+st.bar_chart(
+    pay.set_index("Payment")["Avg_Tip"],
+    height=280
+)
+
+st.subheader("Phase 3 - Distance vs Fare")
+st.dataframe(dist, use_container_width=True)
+st.bar_chart(
+    dist.set_index("Distance")["Trips"],
+    height=280
+)
+st.bar_chart(
+    dist.set_index("Distance")["Avg_Total"],
+    height=280
+)
+
+st.subheader("Phase 3 - Weekday vs Weekend")
+st.dataframe(weekday, use_container_width=True)
+st.bar_chart(
+    weekday.set_index("Day")["Trips"],
+    height=280
+)
+st.bar_chart(
+    weekday.set_index("Day")["Avg_Tip"],
+    height=280
+)
+
+st.subheader("Phase 4 - Airport vs City")
+st.dataframe(airport, use_container_width=True)
+st.bar_chart(
+    airport.set_index("Area")["Trips"],
+    height=280
+)
+st.bar_chart(
+    airport.set_index("Area")["Avg_Total"],
+    height=280
+)
+
+st.subheader("Download Data")
+csv1 = df.to_csv(index=False)
+st.download_button(
+    "Download Top Zones CSV",
+    csv1,
+    "top_zones.csv",
+    "text/csv"
+)
+csv2 = daily.to_csv(index=False)
+st.download_button(
+    "Download Daily CSV",
+    csv2,
+    "daily.csv",
+    "text/csv"
+)
+csv3 = airport.to_csv(index=False)
+st.download_button(
+    "Download Airport CSV",
+    csv3,
+    "airport.csv",
+    "text/csv"
+)
+
+st.success("FleetSense Phase 5 Complete - Map Added")
