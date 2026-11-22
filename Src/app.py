@@ -1,6 +1,7 @@
 import streamlit as st
 import duckdb
 import pandas as pd
+import plotly.express as px
 
 st.set_page_config(
     page_title="FleetSense NYC",
@@ -13,22 +14,20 @@ st.set_page_config(
 st.markdown("""
 <style>
   .block-container { padding-top: 0.8rem; padding-bottom: 0.8rem; padding-left: 0.8rem; padding-right: 0.8rem; }
-  h1 { font-size: 1.5rem !important; line-height: 1.2 !important; white-space: normal !important; }
+  h1 { font-size: 1.6rem !important; line-height: 1.2 !important; }
   h3 { font-size: 1.1rem !important; }
-  [data-testid="stMetricValue"] { font-size: 1.25rem !important; }
-  [data-testid="stMetricLabel"] { font-size: 0.75rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🚕 FleetSense - NYC Taxi")
-st.caption("Source: NYC TLC • Jan 2024 • 2.9M real trips")
+st.title("FleetSense")
+st.markdown("### 🚕 NYC Taxi - Jan 2024")
+st.caption("Source: NYC TLC • 2.9M real trips")
 
 URL = "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet"
 
 @st.cache_data
 def load_data():
     con = duckdb.connect(":memory:")
-    # One query instead of 3 - much faster on Streamlit Cloud
     kpis = con.execute(f"""
         SELECT COUNT(*) as trips,
                SUM(fare_amount) as revenue,
@@ -52,7 +51,7 @@ def load_data():
     con.close()
     return kpis, zones_df, daily_df
 
-# --- Sidebar - now actually works ---
+# --- Sidebar ---
 st.sidebar.header("Filters")
 data_filter = st.sidebar.selectbox("Data Range", ["All", "Last 7 days", "Last 30 days"])
 min_trips = st.sidebar.slider("Min Trips (Top Zones)", 0, 100, 0)
@@ -70,12 +69,27 @@ elif data_filter == "Last 30 days":
 
 df_filtered = df[df["Trips"] >= min_trips]
 
-# --- KPIs - 2x2 on mobile, 4 in a row on desktop ---
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Total Trips", f"{total_trips:,}")
-c2.metric("Total Revenue", f"${total_revenue:,.0f}")
-c3.metric("Avg Fare", f"${avg_fare:.2f}")
-c4.metric("Zones", zones)
+# --- KPIs - 2x2 cards that stay 2x2 on mobile ---
+st.markdown(f"""
+<div style="display:flex; flex-wrap:wrap; gap:8px;">
+  <div style="flex:1 1 45%; background:#f0f2f6; padding:12px; border-radius:10px;">
+    <div style="font-size:12px; color:#666;">Total Trips</div>
+    <div style="font-size:20px; font-weight:700;">{total_trips:,}</div>
+  </div>
+  <div style="flex:1 1 45%; background:#f0f2f6; padding:12px; border-radius:10px;">
+    <div style="font-size:12px; color:#666;">Total Revenue</div>
+    <div style="font-size:20px; font-weight:700;">${total_revenue:,.0f}</div>
+  </div>
+  <div style="flex:1 1 45%; background:#f0f2f6; padding:12px; border-radius:10px;">
+    <div style="font-size:12px; color:#666;">Avg Fare</div>
+    <div style="font-size:20px; font-weight:700;">${avg_fare:.2f}</div>
+  </div>
+  <div style="flex:1 1 45%; background:#f0f2f6; padding:12px; border-radius:10px;">
+    <div style="font-size:12px; color:#666;">Zones</div>
+    <div style="font-size:20px; font-weight:700;">{zones}</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
 # --- Top Zones ---
 st.subheader("Top 10 Pickup Zones")
@@ -85,14 +99,33 @@ st.dataframe(
     hide_index=True,
     column_config={"Revenue": st.column_config.NumberColumn(format="$%.0f")}
 )
-# Horizontal bar = reads better on mobile
-st.bar_chart(df_filtered.set_index("Zone_ID")["Trips"], horizontal=True, height=320)
+
+fig_zones = px.bar(
+    df_filtered.sort_values("Trips"),
+    x="Trips", y="Zone_ID", orientation="h",
+    height=340, text="Trips"
+)
+fig_zones.update_layout(
+    margin=dict(l=10, r=10, t=10, b=10),
+    xaxis_title=None, yaxis_title=None,
+    yaxis=dict(tickfont=dict(size=11)),
+    xaxis=dict(tickfont=dict(size=11))
+)
+fig_zones.update_traces(texttemplate="%{text:,}", textposition="outside")
+st.plotly_chart(fig_zones, use_container_width=True, config={"displayModeBar": False})
 
 # --- Daily Trips ---
 st.subheader(f"Daily Trips - {data_filter}")
 daily_filtered["day"] = pd.to_datetime(daily_filtered["day"])
-# Short date labels so they don't overlap
 daily_filtered["label"] = daily_filtered["day"].dt.strftime("%b %d")
-st.bar_chart(daily_filtered.set_index("label")["Trips"], height=320)
+
+fig_daily = px.bar(daily_filtered, x="label", y="Trips", height=320)
+fig_daily.update_layout(
+    margin=dict(l=10, r=10, t=10, b=40),
+    xaxis_title=None, yaxis_title=None
+)
+fig_daily.update_xaxes(tickangle=-45, tickfont=dict(size=10), dtick=3)
+fig_daily.update_yaxes(tickfont=dict(size=10))
+st.plotly_chart(fig_daily, use_container_width=True, config={"displayModeBar": False})
 
 st.info("FleetSense Phase 1 • Live on Streamlit Cloud | Source: NYC TLC")
