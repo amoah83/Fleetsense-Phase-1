@@ -84,3 +84,4 @@ def cross_borough(con):
     GROUP BY 1 ORDER BY 3 DESC
     """)
     print("CR-2: cross_borough tables created")
+ cross_borough(con)
