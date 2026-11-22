@@ -27,13 +27,14 @@ c3.metric("Avg Fare",str(round(k[2],2)));c4.metric("Zones",str(k[3]))
 st.subheader("Top 10 Zones");st.dataframe(z,use_container_width=True)
 z2=z.copy();z2["Z"]=z2["Z"].astype(str);z2=z2.sort_values("T")
 st.bar_chart(z2.set_index("Z")["T"])
-st.subheader("Phase 5 - Map Data")
+st.subheader("Phase 6 - Real Map")
 ids=[230,161,162,48,170,100,186,164,114,68]
 nm=["Times Sq","Midtown C","Midtown E","Clinton E","Murray Hill","Garment","Penn","Midtown N","Greenwich","E Chelsea"]
 la=[40.758,40.7549,40.7527,40.766,40.747,40.752,40.7505,40.762,40.734,40.744]
 lo=[-73.9855,-73.984,-73.9772,-73.988,-73.978,-73.99,-73.9934,-73.979,-73.999,-73.996]
 lk=pd.DataFrame();lk["Z"]=ids;lk["Name"]=nm;lk["lat"]=la;lk["lon"]=lo
 m=pd.merge(z,lk,on="Z",how="left").dropna(subset=["lat"])
+st.map(m)
 st.dataframe(m,use_container_width=True)
 st.subheader("Daily");dd["day"]=pd.to_datetime(dd["day"]);dd["lb"]=dd["day"].dt.strftime("%b %d")
 st.bar_chart(dd.set_index("lb")["T"])
@@ -43,4 +44,4 @@ st.subheader("Distance");st.dataframe(s,use_container_width=True);st.bar_chart(s
 st.subheader("Weekday");st.dataframe(w,use_container_width=True);st.bar_chart(w.set_index("D")["T"]);st.bar_chart(w.set_index("D")["Tip"])
 st.subheader("Airport");st.dataframe(a,use_container_width=True);st.bar_chart(a.set_index("A")["T"]);st.bar_chart(a.set_index("A")["Amt"])
 st.download_button("Download Zones CSV",z.to_csv(index=False),"zones.csv","text/csv")
-st.success("FleetSense Phase 5 Complete")
+st.success("FleetSense Phase 6 Complete - Real Map")
