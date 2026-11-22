@@ -91,12 +91,9 @@ def load_data():
     q8 += "GROUP BY Area ORDER BY Trips DESC"
     airport_df = con.execute(q8).df()
     con.close()
-    return kpis
-    return kpis, zones_df, daily_df, hourly_df
-    return kpis, zones_df, daily_df, hourly_df, pay_df
-    return kpis, zones_df, daily_df, hourly_df, pay_df, dist_df
-    return kpis, zones_df, daily_df, hourly_df, pay_df, dist_df, weekday_df
-    return kpis, zones_df, daily_df, hourly_df, pay_df, dist_df, weekday_df, airport_df
+    result = (kpis, zones_df, daily_df, hourly_df)
+    result += (pay_df, dist_df, weekday_df, airport_df)
+    return result
 
 st.sidebar.header("Filters")
 data_filter = st.sidebar.selectbox(
@@ -143,4 +140,90 @@ st.bar_chart(
 )
 
 st.subheader("Daily Trips")
-daily_filtered["day"] = pd.to_datetime
+daily_filtered["day"] = pd.to_datetime(
+    daily_filtered["day"]
+)
+daily_filtered["label"] = daily_filtered["day"].dt.strftime(
+    "%b %d"
+)
+st.bar_chart(
+    daily_filtered.set_index("label")["Trips"],
+    height=320
+)
+
+st.subheader("Phase 2 - Hourly Demand")
+hourly["hour_label"] = hourly["hour"].astype(str) + ":00"
+st.bar_chart(
+    hourly.set_index("hour_label")["Trips"],
+    height=320
+)
+st.dataframe(hourly, use_container_width=True)
+
+st.subheader("Phase 2 - Payment and Tips")
+st.dataframe(pay, use_container_width=True)
+st.bar_chart(
+    pay.set_index("Payment")["Trips"],
+    height=280
+)
+st.bar_chart(
+    pay.set_index("Payment")["Avg_Tip"],
+    height=280
+)
+
+st.subheader("Phase 3 - Distance vs Fare")
+st.dataframe(dist, use_container_width=True)
+st.bar_chart(
+    dist.set_index("Distance")["Trips"],
+    height=280
+)
+st.bar_chart(
+    dist.set_index("Distance")["Avg_Total"],
+    height=280
+)
+
+st.subheader("Phase 3 - Weekday vs Weekend")
+st.dataframe(weekday, use_container_width=True)
+st.bar_chart(
+    weekday.set_index("Day")["Trips"],
+    height=280
+)
+st.bar_chart(
+    weekday.set_index("Day")["Avg_Tip"],
+    height=280
+)
+
+st.subheader("Phase 4 - Airport vs City")
+st.dataframe(airport, use_container_width=True)
+st.bar_chart(
+    airport.set_index("Area")["Trips"],
+    height=280
+)
+st.bar_chart(
+    airport.set_index("Area")["Avg_Total"],
+    height=280
+)
+
+st.subheader("Download Data")
+csv1 = df.to_csv(index=False)
+st.download_button(
+    "Download Top Zones CSV",
+    csv1,
+    "top_zones.csv",
+    "text/csv"
+)
+csv2 = daily.to_csv(index=False)
+st.download_button(
+    "Download Daily CSV",
+    csv2,
+    "daily.csv",
+    "text/csv"
+)
+csv3 = airport.to_csv(index=False)
+st.download_button(
+    "Download Airport CSV",
+    csv3,
+    "airport.csv",
+    "text/csv"
+)
+
+st.success("FleetSense Phase 4 Complete")
