@@ -66,7 +66,6 @@ elif data_filter == "Last 30 days":
 
 df_filtered = df[df["Trips"] >= min_trips]
 
-# --- KPIs - 2x2 cards ---
 st.markdown(f"""
 <div style="display:flex; flex-wrap:wrap; gap:8px;">
   <div style="flex:1 1 45%; background:#f0f2f6; padding:12px; border-radius:10px;">
@@ -88,7 +87,6 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# --- Top Zones - FIXED ---
 st.subheader("Top 10 Pickup Zones")
 st.dataframe(
     df_filtered,
@@ -101,13 +99,4 @@ zones_plot = df_filtered.copy()
 zones_plot["Zone_ID"] = zones_plot["Zone_ID"].astype(str)
 zones_plot = zones_plot.sort_values("Trips")
 
-fig_zones = px.bar(
-    zones_plot,
-    x="Trips", y="Zone_ID", orientation="h",
-    height=340
-)
-fig_zones.update_layout(
-    margin=dict(l=40, r=10, t=10, b=10),
-    xaxis_title=None, yaxis_title=None,
-    yaxis=dict(type="category", tickfont=dict(size=11)),
-    x
+fig_zones = px.bar(zones_plot, x="Trips", y="Zone_ID", orientation="h", height=
