@@ -79,4 +79,12 @@ def load_data():
     weekday_df = con.execute(q7).df()
     q8 = "SELECT CASE "
     q8 += "WHEN PULocationID = 132 THEN 'JFK' "
-    q
+    q8 += "WHEN PULocationID = 138 THEN 'LaGuardia' "
+    q8 += "WHEN PULocationID = 1 THEN 'Newark' "
+    q8 += "ELSE 'City' END as Area, "
+    q8 += "COUNT(*) as Trips, "
+    q8 += "AVG(total_amount) as Avg_Total, "
+    q8 += "AVG(trip_distance) as Avg_Distance "
+    q8 += "FROM read_parquet('" + URL + "') "
+    q8 += "WHERE fare_amount > 0 "
+    q8 += "AND fare_amount
