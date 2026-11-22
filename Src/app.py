@@ -74,8 +74,19 @@ def load_data():
         WHERE tpep_pickup_datetime IS NOT NULL
         GROUP BY Day ORDER BY Trips DESC
     """).df()
+    airport_df = con.execute(f"""
+        SELECT CASE WHEN PULocationID = 132 THEN 'JFK Airport' WHEN PULocationID = 138 THEN 'LaGuardia Airport' WHEN PULocationID = 1 THEN 'Newark Airport' ELSE 'City - All Other Zones' END as Area,
+               COUNT(*) as Trips,
+               AVG(fare_amount) as Avg_Fare,
+               AVG(tip_amount) as Avg_Tip,
+               AVG(total_amount) as Avg_Total,
+               AVG(trip_distance) as Avg_Distance
+        FROM read_parquet('{URL}')
+        WHERE fare_amount > 0 AND fare_amount < 300
+        GROUP BY Area ORDER BY Trips DESC
+    """).df()
     con.close()
-    return kpis, zones_df, daily_df, hourly_df, pay_df, dist_df, weekday_df
+    return kpis, zones_df, daily_df, hourly_df, pay_df, dist_df, weekday_df, airport_df
 
 st.sidebar.header("Filters")
 data_filter = st.sidebar.selectbox("Data Range", ["All", "Last 7 days", "Last 30 days"])
@@ -83,7 +94,7 @@ min_trips = st.sidebar.slider("Min Trips (Top Zones)", 0, 100, 0)
 st.sidebar.success(f"Active: {data_filter} - Min {min_trips}")
 
 with st.spinner("Loading real Jan 2024 data..."):
-    (total_trips, total_revenue, avg_fare, zones), df, daily, hourly, pay, dist, weekday = load_data()
+    (total_trips, total_revenue, avg_fare, zones), df, daily, hourly, pay, dist, weekday, airport = load_data()
 
 daily_filtered = daily.copy()
 if data_filter == "Last 7 days":
@@ -100,54 +111,4 @@ st.markdown(f"""
     <div style="font-size:20px; font-weight:700;">{total_trips:,}</div>
   </div>
   <div style="flex:1 1 45%; background:#f0f2f6; padding:12px; border-radius:10px;">
-    <div style="font-size:12px; color:#666;">Total Revenue</div>
-    <div style="font-size:20px; font-weight:700;">${total_revenue:,.0f}</div>
-  </div>
-  <div style="flex:1 1 45%; background:#f0f2f6; padding:12px; border-radius:10px;">
-    <div style="font-size:12px; color:#666;">Avg Fare</div>
-    <div style="font-size:20px; font-weight:700;">${avg_fare:.2f}</div>
-  </div>
-  <div style="flex:1 1 45%; background:#f0f2f6; padding:12px; border-radius:10px;">
-    <div style="font-size:12px; color:#666;">Zones</div>
-    <div style="font-size:20px; font-weight:700;">{zones}</div>
-  </div>
-</div>
-""", unsafe_allow_html=True)
-
-st.subheader("Top 10 Pickup Zones")
-st.dataframe(df_filtered, use_container_width=True, hide_index=True, column_config={"Revenue": st.column_config.NumberColumn(format="$%.0f")})
-zones_plot = df_filtered.copy()
-zones_plot["Zone_ID"] = zones_plot["Zone_ID"].astype(str)
-zones_plot = zones_plot.sort_values("Trips")
-st.bar_chart(zones_plot.set_index("Zone_ID")["Trips"], height=340)
-
-st.subheader("Daily Trips")
-daily_filtered["day"] = pd.to_datetime(daily_filtered["day"])
-daily_filtered["label"] = daily_filtered["day"].dt.strftime("%b %d")
-st.bar_chart(daily_filtered.set_index("label")["Trips"], height=320)
-
-st.subheader("Phase 2 - Hourly Demand")
-st.caption("Peak is evening rush")
-hourly["hour_label"] = hourly["hour"].astype(str) + ":00"
-st.bar_chart(hourly.set_index("hour_label")["Trips"], height=320)
-st.dataframe(hourly, use_container_width=True, hide_index=True, column_config={"Avg_Fare": st.column_config.NumberColumn(format="$%.2f")})
-
-st.subheader("Phase 2 - Payment Type and Tips")
-st.caption("Card riders tip more")
-st.dataframe(pay, use_container_width=True, hide_index=True, column_config={"Tip_Pct": st.column_config.NumberColumn(format="%.1f%%"), "Avg_Tip": st.column_config.NumberColumn(format="$%.2f")})
-st.bar_chart(pay.set_index("Payment")["Trips"], height=280)
-st.bar_chart(pay.set_index("Payment")["Tip_Pct"], height=280)
-
-st.subheader("Phase 3 - Trip Distance vs Fare")
-st.caption("Short trips are most common")
-st.dataframe(dist, use_container_width=True, hide_index=True, column_config={"Avg_Fare": st.column_config.NumberColumn(format="$%.2f"), "Avg_Tip": st.column_config.NumberColumn(format="$%.2f"), "Avg_Total": st.column_config.NumberColumn(format="$%.2f")})
-st.bar_chart(dist.set_index("Distance")["Trips"], height=280)
-st.bar_chart(dist.set_index("Distance")["Avg_Total"], height=280)
-
-st.subheader("Phase 3 - Weekday vs Weekend")
-st.caption("Which day is busiest")
-st.dataframe(weekday, use_container_width=True, hide_index=True, column_config={"Avg_Fare": st.column_config.NumberColumn(format="$%.2f"), "Avg_Tip": st.column_config.NumberColumn(format="$%.2f")})
-st.bar_chart(weekday.set_index("Day")["Trips"], height=280)
-st.bar_chart(weekday.set_index("Day")["Avg_Tip"], height=280)
-
-st.info("FleetSense Phase 3 - Source: NYC TLC")
+    <div style="font-size:12px;
