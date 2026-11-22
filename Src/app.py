@@ -10,7 +10,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- Mobile fix ---
 st.markdown("""
 <style>
   .block-container { padding-top: 0.8rem; padding-bottom: 0.8rem; padding-left: 0.8rem; padding-right: 0.8rem; }
@@ -51,7 +50,6 @@ def load_data():
     con.close()
     return kpis, zones_df, daily_df
 
-# --- Sidebar ---
 st.sidebar.header("Filters")
 data_filter = st.sidebar.selectbox("Data Range", ["All", "Last 7 days", "Last 30 days"])
 min_trips = st.sidebar.slider("Min Trips (Top Zones)", 0, 100, 0)
@@ -60,7 +58,6 @@ st.sidebar.success(f"Active: {data_filter} • Min {min_trips}")
 with st.spinner("Loading real Jan 2024 data (2.9M rows)..."):
     (total_trips, total_revenue, avg_fare, zones), df, daily = load_data()
 
-# Apply filters
 daily_filtered = daily.copy()
 if data_filter == "Last 7 days":
     daily_filtered = daily_filtered.tail(7)
@@ -69,7 +66,7 @@ elif data_filter == "Last 30 days":
 
 df_filtered = df[df["Trips"] >= min_trips]
 
-# --- KPIs - 2x2 cards that stay 2x2 on mobile ---
+# --- KPIs - 2x2 cards ---
 st.markdown(f"""
 <div style="display:flex; flex-wrap:wrap; gap:8px;">
   <div style="flex:1 1 45%; background:#f0f2f6; padding:12px; border-radius:10px;">
@@ -91,7 +88,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# --- Top Zones ---
+# --- Top Zones - FIXED ---
 st.subheader("Top 10 Pickup Zones")
 st.dataframe(
     df_filtered,
@@ -100,32 +97,17 @@ st.dataframe(
     column_config={"Revenue": st.column_config.NumberColumn(format="$%.0f")}
 )
 
+zones_plot = df_filtered.copy()
+zones_plot["Zone_ID"] = zones_plot["Zone_ID"].astype(str)
+zones_plot = zones_plot.sort_values("Trips")
+
 fig_zones = px.bar(
-    df_filtered.sort_values("Trips"),
+    zones_plot,
     x="Trips", y="Zone_ID", orientation="h",
-    height=340, text="Trips"
+    height=340
 )
 fig_zones.update_layout(
-    margin=dict(l=10, r=10, t=10, b=10),
+    margin=dict(l=40, r=10, t=10, b=10),
     xaxis_title=None, yaxis_title=None,
-    yaxis=dict(tickfont=dict(size=11)),
-    xaxis=dict(tickfont=dict(size=11))
-)
-fig_zones.update_traces(texttemplate="%{text:,}", textposition="outside")
-st.plotly_chart(fig_zones, use_container_width=True, config={"displayModeBar": False})
-
-# --- Daily Trips ---
-st.subheader(f"Daily Trips - {data_filter}")
-daily_filtered["day"] = pd.to_datetime(daily_filtered["day"])
-daily_filtered["label"] = daily_filtered["day"].dt.strftime("%b %d")
-
-fig_daily = px.bar(daily_filtered, x="label", y="Trips", height=320)
-fig_daily.update_layout(
-    margin=dict(l=10, r=10, t=10, b=40),
-    xaxis_title=None, yaxis_title=None
-)
-fig_daily.update_xaxes(tickangle=-45, tickfont=dict(size=10), dtick=3)
-fig_daily.update_yaxes(tickfont=dict(size=10))
-st.plotly_chart(fig_daily, use_container_width=True, config={"displayModeBar": False})
-
-st.info("FleetSense Phase 1 • Live on Streamlit Cloud | Source: NYC TLC")
+    yaxis=dict(type="category", tickfont=dict(size=11)),
+    x
