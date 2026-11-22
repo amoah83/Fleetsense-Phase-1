@@ -52,3 +52,35 @@ ORDER BY revenue_with_tolls DESC
 con.execute("COPY revenue_per_zone TO 'data/processed/revenue_per_zone.csv' (HEADER)")
 print("CR-1 DONE: revenue_per_zone.csv created with with/without tolls")
 print(con.execute("SELECT * FROM revenue_per_zone LIMIT 5").fetchall())
+def cross_borough(con):
+    # CR-2: Per Miriam 23 Nov - Manhattan <-> Outer Borough
+    con.execute("""
+    CREATE OR REPLACE TABLE cross_borough_by_hour AS
+    SELECT
+        EXTRACT(HOUR FROM f.tpep_pickup_datetime) AS hour,
+        COUNT(*) AS trips,
+        100.0 * SUM(CASE WHEN
+            (pu.Borough = 'Manhattan' AND do.Borough != 'Manhattan')
+            OR (pu.Borough != 'Manhattan' AND do.Borough = 'Manhattan')
+            THEN 1 ELSE 0 END) / COUNT(*) AS share_cross_borough_pct
+    FROM fact_trips f
+    JOIN taxi_zone pu ON f.PULocationID = pu.LocationID
+    JOIN taxi_zone do ON f.DOLocationID = do.LocationID
+    GROUP BY 1 ORDER BY 1
+    """)
+
+    con.execute("""
+    CREATE OR REPLACE TABLE cross_borough_by_zone AS
+    SELECT
+        pu.Zone AS zone,
+        COUNT(*) AS trips,
+        100.0 * SUM(CASE WHEN
+            (pu.Borough = 'Manhattan' AND do.Borough != 'Manhattan')
+            OR (pu.Borough != 'Manhattan' AND do.Borough = 'Manhattan')
+            THEN 1 ELSE 0 END) / COUNT(*) AS share_cross_borough_pct
+    FROM fact_trips f
+    JOIN taxi_zone pu ON f.PULocationID = pu.LocationID
+    JOIN taxi_zone do ON f.DOLocationID = do.LocationID
+    GROUP BY 1 ORDER BY 3 DESC
+    """)
+    print("CR-2: cross_borough tables created")
