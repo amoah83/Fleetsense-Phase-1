@@ -177,7 +177,12 @@ with t2:
     m = pd.merge(z, lk, on="Z", how="left")
     m = m.dropna(subset=["lat"])
     st.map(m)
-    st.dataframe(m, use_container_width=True)
+    md = m.copy()
+    md["Revenue ($)"] = md["R"].map(
+        lambda x: f"${x:,.0f}"
+    )
+    md = md.drop(columns=["R"])
+    st.dataframe(md, use_container_width=True)
     st.caption("Red dots = Top 10 busiest zones")
 
 with t3:
