@@ -2,12 +2,7 @@ import streamlit as st
 import duckdb
 import pandas as pd
 
-st.set_page_config(
-    page_title="FleetSense NYC",
-    page_icon="🚕",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+st.set_page_config(page_title="FleetSense NYC", page_icon="🚕", layout="wide", initial_sidebar_state="collapsed")
 
 st.markdown("""
 <style>
@@ -18,8 +13,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("FleetSense")
-st.markdown("### 🚕 NYC Taxi - Jan 2024")
-st.caption("Source: NYC TLC • 2.9M real trips")
+st.markdown("### NYC Taxi - Jan 2024")
+st.caption("Source: NYC TLC - 2.9M trips")
 
 URL = "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet"
 
@@ -85,9 +80,9 @@ def load_data():
 st.sidebar.header("Filters")
 data_filter = st.sidebar.selectbox("Data Range", ["All", "Last 7 days", "Last 30 days"])
 min_trips = st.sidebar.slider("Min Trips (Top Zones)", 0, 100, 0)
-st.sidebar.success(f"Active: {data_filter} • Min {min_trips}")
+st.sidebar.success(f"Active: {data_filter} - Min {min_trips}")
 
-with st.spinner("Loading real Jan 2024 data (2.9M rows)..."):
+with st.spinner("Loading real Jan 2024 data..."):
     (total_trips, total_revenue, avg_fare, zones), df, daily, hourly, pay, dist, weekday = load_data()
 
 daily_filtered = daily.copy()
@@ -120,22 +115,39 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 st.subheader("Top 10 Pickup Zones")
-st.dataframe(
-    df_filtered,
-    use_container_width=True,
-    hide_index=True,
-    column_config={"Revenue": st.column_config.NumberColumn(format="$%.0f")}
-)
-
+st.dataframe(df_filtered, use_container_width=True, hide_index=True, column_config={"Revenue": st.column_config.NumberColumn(format="$%.0f")})
 zones_plot = df_filtered.copy()
 zones_plot["Zone_ID"] = zones_plot["Zone_ID"].astype(str)
 zones_plot = zones_plot.sort_values("Trips")
 st.bar_chart(zones_plot.set_index("Zone_ID")["Trips"], height=340)
 
-st.subheader(f"Daily Trips - {data_filter}")
+st.subheader("Daily Trips")
 daily_filtered["day"] = pd.to_datetime(daily_filtered["day"])
 daily_filtered["label"] = daily_filtered["day"].dt.strftime("%b %d")
 st.bar_chart(daily_filtered.set_index("label")["Trips"], height=320)
 
 st.subheader("Phase 2 - Hourly Demand")
-st.caption("When do New York
+st.caption("Peak is evening rush")
+hourly["hour_label"] = hourly["hour"].astype(str) + ":00"
+st.bar_chart(hourly.set_index("hour_label")["Trips"], height=320)
+st.dataframe(hourly, use_container_width=True, hide_index=True, column_config={"Avg_Fare": st.column_config.NumberColumn(format="$%.2f")})
+
+st.subheader("Phase 2 - Payment Type and Tips")
+st.caption("Card riders tip more")
+st.dataframe(pay, use_container_width=True, hide_index=True, column_config={"Tip_Pct": st.column_config.NumberColumn(format="%.1f%%"), "Avg_Tip": st.column_config.NumberColumn(format="$%.2f")})
+st.bar_chart(pay.set_index("Payment")["Trips"], height=280)
+st.bar_chart(pay.set_index("Payment")["Tip_Pct"], height=280)
+
+st.subheader("Phase 3 - Trip Distance vs Fare")
+st.caption("Short trips are most common")
+st.dataframe(dist, use_container_width=True, hide_index=True, column_config={"Avg_Fare": st.column_config.NumberColumn(format="$%.2f"), "Avg_Tip": st.column_config.NumberColumn(format="$%.2f"), "Avg_Total": st.column_config.NumberColumn(format="$%.2f")})
+st.bar_chart(dist.set_index("Distance")["Trips"], height=280)
+st.bar_chart(dist.set_index("Distance")["Avg_Total"], height=280)
+
+st.subheader("Phase 3 - Weekday vs Weekend")
+st.caption("Which day is busiest")
+st.dataframe(weekday, use_container_width=True, hide_index=True, column_config={"Avg_Fare": st.column_config.NumberColumn(format="$%.2f"), "Avg_Tip": st.column_config.NumberColumn(format="$%.2f")})
+st.bar_chart(weekday.set_index("Day")["Trips"], height=280)
+st.bar_chart(weekday.set_index("Day")["Avg_Tip"], height=280)
+
+st.info("FleetSense Phase 3 - Source: NYC TLC")
