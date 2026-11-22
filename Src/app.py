@@ -96,4 +96,71 @@ def load_data():
     return result
 
 st.sidebar.header("Filters")
-data_filter = st.sidebar
+data_filter = st.sidebar.selectbox(
+    "Data Range",
+    ["All", "Last 7 days", "Last 30 days"]
+)
+
+with st.spinner("Loading data..."):
+    out = load_data()
+    kpis = out[0]
+    df = out[1]
+    daily = out[2]
+    hourly = out[3]
+    pay = out[4]
+    dist = out[5]
+    weekday = out[6]
+    airport = out[7]
+    total_trips = kpis[0]
+    total_revenue = kpis[1]
+    avg_fare = kpis[2]
+    zones = kpis[3]
+
+daily_filtered = daily.copy()
+if data_filter == "Last 7 days":
+    daily_filtered = daily_filtered.tail(7)
+if data_filter == "Last 30 days":
+    daily_filtered = daily_filtered.tail(30)
+
+c1, c2 = st.columns(2)
+c1.metric("Total Trips", f"{total_trips:,}")
+c2.metric("Total Revenue", f"${total_revenue:,.0f}")
+c3, c4 = st.columns(2)
+c3.metric("Avg Fare", f"${avg_fare:.2f}")
+c4.metric("Zones", f"{zones}")
+
+st.subheader("Top 10 Pickup Zones")
+st.dataframe(df, use_container_width=True)
+zones_plot = df.copy()
+zones_plot["Zone_ID"] = zones_plot["Zone_ID"].astype(str)
+zones_plot = zones_plot.sort_values("Trips")
+st.bar_chart(
+    zones_plot.set_index("Zone_ID")["Trips"],
+    height=340
+)
+
+st.subheader("Phase 5 - Map of Top Zones")
+st.caption("Top pickup zones in NYC")
+zone_names = {
+    230: "Times Sq",
+    161: "Midtown Center",
+    162: "Midtown East",
+    48: "Clinton East",
+    170: "Murray Hill",
+    100: "Garment District",
+    186: "Penn Station",
+    164: "Midtown North",
+    114: "Greenwich Village",
+    68: "East Chelsea",
+    132: "JFK Airport",
+    138: "LaGuardia",
+    1: "Newark Airport"
+}
+zone_lat = {
+    230: 40.7580,
+    161: 40.7549,
+    162: 40.7527,
+    48: 40.7660,
+    170: 40.7470,
+    100: 40.7520,
+    186: 
